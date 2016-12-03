@@ -4,7 +4,6 @@
  * Version 0.1 December, 2016
  * Copyright 2016 Jakub Borowka
  */
-// najpierw sprawdzac czy jest zmiana jasnosci a potem kolory
 
 #include <IRremote.h>
 #include <PololuLedStrip.h>
@@ -21,6 +20,7 @@ decode_results results;
 
 //start brightness
 byte brightness = 153;
+int32_t kod = 0;
 
 void setup()
 {
@@ -49,7 +49,7 @@ rgb_color hsvToRgb(uint16_t h, uint8_t s, uint8_t v)
 }
 
 void rainbow(byte brightness, boolean allTheSame=false){ 
-  uint16_t time = millis() >> 5;
+  uint16_t time = millis() >> 5; //5
   for(uint16_t i = 0; i < LED_COUNT; i++){
     byte x = (time >> 2);
     if (!allTheSame){
@@ -68,61 +68,91 @@ void setColor(uint16_t h,uint8_t s, uint8_t v){
   ledStrip.write(colors,LED_COUNT);
 }
 
-void loop() {
-  if (irrecv.decode(&results)) {
+void loop() { // jak był w teczy to nie czeka na kolejny kod tylko robi dalej
+  Serial.println("outLoop");
+  if (irrecv.decode(&results)) { 
+    startRainbow:
     Serial.println(results.value, DEC);
     if (results.value == 16736925){
-      Serial.println("up2");
       if (brightness != 255){
-        // maxymalnie jest 254
+        Serial.println("plus");
         brightness += 51;
       }
     }
     else if (results.value == 16754775){
       if (brightness != 0){
-      Serial.println("down2");
-      brightness -= 51;
+        Serial.println("minus");
+        brightness -= 51;
       }
     }
-    // jak up lub down to wykonywac dla poprzedniego kodu
-    
-    switch (results.value){ // to na dec
+    if ((results.value != 16754775 and results.value != 16736925) 
+         and( results.value == 16738455 or results.value == 16750695
+         or results.value == 16756815 or results.value == 16724175
+         or results.value == 16718055 or results.value == 16743045
+         or results.value == 16712445 or results.value == 16730805
+         or results.value == 16728765))
+      { // jak kod nie jest guzikiem ale jest kodem ktory cos robi
+       Serial.println("zmieniam kod");
+      kod = results.value; // jak kod zapisany
+    }
+    Serial.println("start brightness: ");
+    Serial.println(brightness);
+    switch (kod){ 
       case 16738455:
         Serial.println(brightness);
-        setColor(300,255,brightness);
+        setColor(360,255,brightness);
         Serial.println("czerwony");
+        Serial.println(brightness);
         break;
       case 16750695:
-        setColor(300,255,brightness);
+        setColor(107,255,brightness);
         Serial.println("zielony");
         break;
       case 16756815:
+        setColor(220,255,brightness);
         Serial.println("niebieski");
         break;
       case 16724175:
         Serial.println("pomaranczowy");
-        setColor(20,255,brightness);
+        setColor(12,255,brightness);
         break;
       case 16718055:
+        setColor(50,255,brightness);
         Serial.println("zolty");
         break;
       case 16743045:
         Serial.println("biały");
+        setColor(0,0,brightness);
         break;
       case 16712445:
-        Serial.println("rainbow");
-        while (true){
-          rainbow(brightness); // jak true to takei same kolory
-        }
-        // nasłuchiwac i while jakis klawisz to breakowac
+          Serial.println("rainbow");
+          irrecv.resume();
+          while (true){
+            rainbow(brightness); // jak true to takei same kolory
+            if (irrecv.decode(&results)){
+              goto startRainbow; // jezu jakie to dobre!
+            }
+        } 
         break;
+        
+      case 16728765: // dopisac do listy
+          irrecv.resume();
+          while (true){
+            rainbow(brightness, true); // jak true to takei same kolory
+            if (irrecv.decode(&results)){
+              goto startRainbow; 
+            }
+          }
+          break;
       case 16730805:
+        setColor(0,0,0);
         Serial.println("wylacz");
         break;
       default: // FFFFFFF albo inny niz zakodowane
         Serial.println("niema");
         break;
       } 
+      
     irrecv.resume(); // Receive the next value
     }
   delay(100); // chyba mozna usunac
