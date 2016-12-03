@@ -4,7 +4,6 @@
  * Version 0.1 December, 2016
  * Copyright 2016 Jakub Borowka
  */
-// najpierw sprawdzac czy jest zmiana jasnosci a potem kolory
 
 #include <IRremote.h>
 #include <PololuLedStrip.h>
@@ -22,12 +21,7 @@ decode_results results;
 //start brightness
 byte brightness = 153;
 int32_t kod = 0;
-/*
-long kod = 0;
-boolean stayRainbow = true;
-boolean stayRainbowIn = true;
-boolean fromRainbow = false;
-*/
+
 void setup()
 {
   Serial.begin(9600);
@@ -55,7 +49,7 @@ rgb_color hsvToRgb(uint16_t h, uint8_t s, uint8_t v)
 }
 
 void rainbow(byte brightness, boolean allTheSame=false){ 
-  uint16_t time = millis() >> 3; //5
+  uint16_t time = millis() >> 5; //5
   for(uint16_t i = 0; i < LED_COUNT; i++){
     byte x = (time >> 2);
     if (!allTheSame){
@@ -95,7 +89,8 @@ void loop() { // jak był w teczy to nie czeka na kolejny kod tylko robi dalej
          and( results.value == 16738455 or results.value == 16750695
          or results.value == 16756815 or results.value == 16724175
          or results.value == 16718055 or results.value == 16743045
-         or results.value == 16712445 or results.value == 16730805))
+         or results.value == 16712445 or results.value == 16730805
+         or results.value == 16728765))
       { // jak kod nie jest guzikiem ale jest kodem ktory cos robi
        Serial.println("zmieniam kod");
       kod = results.value; // jak kod zapisany
@@ -133,19 +128,22 @@ void loop() { // jak był w teczy to nie czeka na kolejny kod tylko robi dalej
           Serial.println("rainbow");
           irrecv.resume();
           while (true){
-            
             rainbow(brightness); // jak true to takei same kolory
-            //Serial.println("1");
             if (irrecv.decode(&results)){
-              Serial.print("brightness: ");
-              Serial.println(brightness, true);
-              goto startRainbow;
-              break; 
-              // jak jakis klawisz to break ale jak nie jest zapisany to zmienna
-              //kod sie nie zmiania
+              goto startRainbow; // jezu jakie to dobre!
             }
         } 
         break;
+        
+      case 16728765: // dopisac do listy
+          irrecv.resume();
+          while (true){
+            rainbow(brightness, true); // jak true to takei same kolory
+            if (irrecv.decode(&results)){
+              goto startRainbow; 
+            }
+          }
+          break;
       case 16730805:
         setColor(0,0,0);
         Serial.println("wylacz");
