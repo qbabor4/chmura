@@ -21,6 +21,9 @@ decode_results results;
 
 //start brightness
 byte brightness = 153;
+long kod = 0;
+boolean stayRainbow = true;
+boolean stayRainbowIn = true;
 
 void setup()
 {
@@ -70,53 +73,83 @@ void setColor(uint16_t h,uint8_t s, uint8_t v){
 
 void loop() {
   if (irrecv.decode(&results)) {
+    stayRainbow = true;
+    stayRainbowIn = true;
     Serial.println(results.value, DEC);
     if (results.value == 16736925){
-      Serial.println("up2");
       if (brightness != 255){
-        // maxymalnie jest 254
+        Serial.println("plus");
         brightness += 51;
       }
     }
     else if (results.value == 16754775){
       if (brightness != 0){
-      Serial.println("down2");
-      brightness -= 51;
+        Serial.println("minus");
+        brightness -= 51;
       }
     }
-    // jak up lub down to wykonywac dla poprzedniego kodu
-    
-    switch (results.value){ // to na dec
+    if ((results.value != 16754775 and results.value != 16736925) 
+         and( results.value == 16738455 or results.value == 16750695
+         or results.value == 16756815 or results.value == 16724175
+         or results.value == 16718055 or results.value == 16743045
+         or results.value == 16712445 or results.value == 16730805))
+      { // jak kod nie jest guzikiem ale jest kodem ktory cos robi
+       Serial.println("zmieniam kod");
+      kod = results.value; // jak kod zapisany
+    }
+    Serial.println(brightness);
+    switch (kod){ 
       case 16738455:
         Serial.println(brightness);
-        setColor(300,255,brightness);
+        setColor(360,255,brightness);
         Serial.println("czerwony");
+        Serial.println(brightness);
         break;
       case 16750695:
-        setColor(300,255,brightness);
+        setColor(107,255,brightness);
         Serial.println("zielony");
         break;
       case 16756815:
+        setColor(220,255,brightness);
         Serial.println("niebieski");
         break;
       case 16724175:
         Serial.println("pomaranczowy");
-        setColor(20,255,brightness);
+        setColor(12,255,brightness);
         break;
       case 16718055:
+        setColor(50,255,brightness);
         Serial.println("zolty");
         break;
       case 16743045:
         Serial.println("biały");
+        setColor(0,0,brightness);
         break;
       case 16712445:
-        Serial.println("rainbow");
-        while (true){
-          rainbow(brightness); // jak true to takei same kolory
+        Serial.println(stayRainbow);
+        if (!stayRainbowIn){
+          Serial.println("in");
+          stayRainbow = stayRainbowIn; // jak sie bez tego to nie zmienia
         }
-        // nasłuchiwac i while jakis klawisz to breakowac
+        Serial.println(stayRainbow);
+        if (stayRainbow){
+          Serial.println("rainbow");
+          irrecv.resume();
+          while (true){
+            rainbow(brightness); // jak true to takei same kolory
+            //Serial.println("1");
+            if (irrecv.decode(&results)){
+              stayRainbowIn = false;
+              break; 
+              // jak jakis klawisz to break ale jak nie jest zapisany to zmienna
+              //kod sie nie zmiania
+            }
+                     
+          }
+        }
         break;
       case 16730805:
+        setColor(0,0,0);
         Serial.println("wylacz");
         break;
       default: // FFFFFFF albo inny niz zakodowane
